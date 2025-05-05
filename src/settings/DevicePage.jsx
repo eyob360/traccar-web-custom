@@ -139,6 +139,98 @@ const DevicePage = () => {
                 }}
                 disabled={!admin}
               />
+              <TextField
+                value={item.insuranceCompany || ''}
+                onChange={(event) => setItem({ ...item, insuranceCompany: event.target.value })}
+                label="Insurance Company"
+              />
+              <TextField
+                value={item.insurancePolicyNumber || ''}
+                onChange={(event) => setItem({ ...item, insurancePolicyNumber: event.target.value })}
+                label="Insurance Policy Number"
+              />
+              <TextField
+                type="number"
+                value={item.insuranceAmount || ''}
+                onChange={(event) => setItem({ ...item, insuranceAmount: event.target.value })}
+                label="Insurance Amount"
+              />
+              <TextField
+                type="date"
+                value={item.insuranceExpiryDate ? item.insuranceExpiryDate.split('T')[0] : ''}
+                onChange={(event) => setItem({ ...item, insuranceExpiryDate: event.target.value })}
+                label="Insurance Expiry Date"
+              />
+              <TextField
+                type="number"
+                value={item.fuelTankCapacity || ''}
+                onChange={(event) => setItem({ ...item, fuelTankCapacity: event.target.value })}
+                label="Fuel Tank Capacity (L)"
+              />
+              <TextField
+                value={item.fuelSensorCalibration || ''}
+                onChange={(event) => setItem({ ...item, fuelSensorCalibration: event.target.value })}
+                label="Fuel Sensor Calibration"
+              />
+              <TextField
+                type="number"
+                value={item.fuelRefillThreshold || ''}
+                onChange={(event) => setItem({ ...item, fuelRefillThreshold: event.target.value })}
+                label="Fuel Refill Threshold (L)"
+              />
+              <TextField
+                type="number"
+                value={item.fuelTheftThreshold || ''}
+                onChange={(event) => setItem({ ...item, fuelTheftThreshold: event.target.value })}
+                label="Fuel Theft Threshold (L)"
+              />
+              <TextField
+                type="number"
+                value={item.fuelConsumptionRate || ''}
+                onChange={(event) => setItem({ ...item, fuelConsumptionRate: event.target.value })}
+                label="Fuel Consumption Rate (L/100km)"
+              />
+              <TextField
+                type="number"
+                value={item.harshAccelThreshold || ''}
+                onChange={(event) => setItem({ ...item, harshAccelThreshold: event.target.value })}
+                label={(
+                  <span>
+                    Harsh Acceleration Threshold (m/s
+                    <sup>2</sup>
+                    )
+                  </span>
+                )}
+              />
+              <TextField
+                type="number"
+                value={item.harshBrakeThreshold || ''}
+                onChange={(event) => setItem({ ...item, harshBrakeThreshold: event.target.value })}
+                label={(
+                  <span>
+                    Harsh Brake Threshold (m/s
+                    <sup>2</sup>
+                    )
+                  </span>
+                )}
+              />
+              <TextField
+                type="number"
+                value={item.sharpTurnThreshold || ''}
+                onChange={(event) => setItem({ ...item, sharpTurnThreshold: event.target.value })}
+                label={(
+                  <span>
+                    Sharp Turn Threshold (m/s
+                    <sup>2</sup>
+                    )
+                  </span>
+                )}
+              />
+              <TextField
+                value={item.idleSpeedThreshold || ''}
+                onChange={(event) => setItem({ ...item, idleSpeedThreshold: event.target.value })}
+                label="Idle Speed Threshold (km/h)"
+              />
               <FormControlLabel
                 control={<Checkbox checked={item.disabled} onChange={(event) => setItem({ ...item, disabled: event.target.checked })} />}
                 label={t('sharedDisabled')}

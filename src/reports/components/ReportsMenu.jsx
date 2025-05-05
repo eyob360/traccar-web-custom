@@ -11,6 +11,10 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import RouteIcon from '@mui/icons-material/Route';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import NotesIcon from '@mui/icons-material/Notes';
+import GasMeter from '@mui/icons-material/GasMeter';
+import CarCrash from '@mui/icons-material/CarCrash';
+import SafetyCheck from '@mui/icons-material/SafetyCheck';
+import HandyMan from '@mui/icons-material/Handyman';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import { useAdministrator, useRestriction } from '../../common/util/permissions';
@@ -72,6 +76,30 @@ const ReportsMenu = () => {
           title={t('reportReplay')}
           link="/replay"
           icon={<RouteIcon />}
+        />
+        <MenuItem
+          title="Fuel Usage"
+          link="/reports/fuel"
+          icon={<GasMeter />}
+          selected={location.pathname === '/reports/fuel'}
+        />
+        <MenuItem
+          title="Driver Behavior"
+          link="/reports/driver-behavior"
+          icon={<CarCrash />}
+          selected={location.pathname === '/reports/driver-behavior'}
+        />
+        <MenuItem
+          title="Insurance"
+          link="/reports/insurance"
+          icon={<SafetyCheck />}
+          selected={location.pathname === '/reports/insurance'}
+        />
+        <MenuItem
+          title="Maintenance"
+          link="/reports/maintenance"
+          icon={<HandyMan />}
+          selected={location.pathname === '/reports/maintenance'}
         />
       </List>
       <Divider />

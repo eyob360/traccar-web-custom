@@ -12,7 +12,7 @@ import SelectField from '../../common/components/SelectField';
 import { useRestriction } from '../../common/util/permissions';
 
 const ReportFilter = ({
-  children, handleSubmit, handleSchedule, showOnly, ignoreDevice, multiDevice, includeGroups, loading,
+  children, handleSubmit, handleSchedule, showOnly, ignoreDevice, multiDevice, includeGroups, ignorePeriod, loading,
 }) => {
   const classes = useReportStyles();
   const dispatch = useDispatch();
@@ -116,7 +116,7 @@ const ReportFilter = ({
           />
         </div>
       )}
-      {button !== 'schedule' ? (
+      {!ignorePeriod && button !== 'schedule' ? (
         <>
           <div className={classes.filterItem}>
             <FormControl fullWidth>
@@ -155,7 +155,7 @@ const ReportFilter = ({
             </div>
           )}
         </>
-      ) : (
+      ) : !ignorePeriod && (
         <>
           <div className={classes.filterItem}>
             <TextField

@@ -60,6 +60,10 @@ import EmulatorPage from './other/EmulatorPage';
 import Loader from './common/components/Loader';
 import { generateLoginToken } from './common/components/NativeInterface';
 import { useLocalization } from './common/components/LocalizationProvider';
+import FuelReportPage from './reports/FuelReportPage';
+import DriverBehaviorReportPage from './reports/DriverBehaviorReportPage';
+import InsuranceReportPage from './reports/InsuranceReportPage';
+import MaintenanceReportPage from './reports/MaintenanceReportPage';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -168,7 +172,11 @@ const Navigation = () => {
         <Route path="reports">
           <Route path="combined" element={<CombinedReportPage />} />
           <Route path="chart" element={<ChartReportPage />} />
+          <Route path="driver-behavior" element={<DriverBehaviorReportPage />} />
           <Route path="event" element={<EventReportPage />} />
+          <Route path="fuel" element={<FuelReportPage />} />
+          <Route path="insurance" element={<InsuranceReportPage />} />
+          <Route path="maintenance" element={<MaintenanceReportPage />} />
           <Route path="route" element={<RouteReportPage />} />
           <Route path="stop" element={<StopReportPage />} />
           <Route path="summary" element={<SummaryReportPage />} />
