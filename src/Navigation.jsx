@@ -64,6 +64,7 @@ import FuelReportPage from './reports/FuelReportPage';
 import DriverBehaviorReportPage from './reports/DriverBehaviorReportPage';
 import InsuranceReportPage from './reports/InsuranceReportPage';
 import MaintenanceReportPage from './reports/MaintenanceReportPage';
+import OptimalRoutePage from './reports/OptimalRoutePage';
 
 const Navigation = () => {
   const navigate = useNavigate();
@@ -177,6 +178,7 @@ const Navigation = () => {
           <Route path="fuel" element={<FuelReportPage />} />
           <Route path="insurance" element={<InsuranceReportPage />} />
           <Route path="maintenance" element={<MaintenanceReportPage />} />
+          <Route path="optimal-route" element={<OptimalRoutePage />} />
           <Route path="route" element={<RouteReportPage />} />
           <Route path="stop" element={<StopReportPage />} />
           <Route path="summary" element={<SummaryReportPage />} />

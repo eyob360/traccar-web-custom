@@ -15,6 +15,7 @@ import GasMeter from '@mui/icons-material/GasMeter';
 import CarCrash from '@mui/icons-material/CarCrash';
 import SafetyCheck from '@mui/icons-material/SafetyCheck';
 import HandyMan from '@mui/icons-material/Handyman';
+import AltRoute from '@mui/icons-material/AltRoute';
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from '../../common/components/LocalizationProvider';
 import { useAdministrator, useRestriction } from '../../common/util/permissions';
@@ -100,6 +101,12 @@ const ReportsMenu = () => {
           link="/reports/maintenance"
           icon={<HandyMan />}
           selected={location.pathname === '/reports/maintenance'}
+        />
+        <MenuItem
+          title="Optimal Route"
+          link="/reports/optimal-route"
+          icon={<AltRoute />}
+          selected={location.pathname === '/reports/optimal-route'}
         />
       </List>
       <Divider />
