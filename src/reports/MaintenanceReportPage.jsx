@@ -1,29 +1,54 @@
 // src/main/webapp/reports/MaintenanceReportPage.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Table, TableHead, TableRow, TableBody, TableCell, TextField, Typography,
-  FormControl, Select, MenuItem, InputLabel,
-} from '@mui/material';
+  Table,
+  TableHead,
+  TableRow,
+  TableBody,
+  TableCell,
+  TextField,
+  Typography,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
+} from "@mui/material";
 // Removed: formatTime import as it's no longer needed for this report
-import ReportFilter from './components/ReportFilter';
+import ReportFilter from "./components/ReportFilter";
 // import { useTranslation } from '../common/components/LocalizationProvider';
-import PageLayout from '../common/components/PageLayout';
-import ReportsMenu from './components/ReportsMenu';
-import { useCatch } from '../reactHelper';
-import useReportStyles from './common/useReportStyles';
-import TableShimmer from '../common/components/TableShimmer';
-import scheduleReport from './common/scheduleReport';
+import PageLayout from "../common/components/PageLayout";
+import ReportsMenu from "./components/ReportsMenu";
+import { useCatch } from "../reactHelper";
+import useReportStyles from "./common/useReportStyles";
+import TableShimmer from "../common/components/TableShimmer";
+import scheduleReport from "./common/scheduleReport";
 
 // Define the fixed columns - REMOVED scheduledDate and daysRemaining
 const fixedColumns = [
-  { key: 'deviceName', labelKey: 'deviceDialogName', label: 'Vehicle Name' },
-  { key: 'groupName', labelKey: 'groupDialogName', label: 'Group' },
-  { key: 'maintenanceTask', labelKey: 'reportMaintenanceTask', label: 'Maintenance Task' },
-  { key: 'scheduledMileage', labelKey: 'reportScheduledMileage', label: 'Scheduled Mileage' },
-  { key: 'currentMileage', labelKey: 'reportCurrentMileage', label: 'Current Mileage' },
-  { key: 'status', labelKey: 'reportStatus', label: 'Status' },
-  { key: 'mileageRemaining', labelKey: 'reportMileageRemaining', label: 'Mileage Remaining' },
+  { key: "deviceName", labelKey: "deviceDialogName", label: "Vehicle Name" },
+  { key: "groupName", labelKey: "groupDialogName", label: "Group" },
+  {
+    key: "maintenanceTask",
+    labelKey: "reportMaintenanceTask",
+    label: "Maintenance Task",
+  },
+  {
+    key: "scheduledMileage",
+    labelKey: "reportScheduledMileage",
+    label: "Scheduled Mileage",
+  },
+  {
+    key: "currentMileage",
+    labelKey: "reportCurrentMileage",
+    label: "Current Mileage",
+  },
+  { key: "status", labelKey: "reportStatus", label: "Status" },
+  {
+    key: "mileageRemaining",
+    labelKey: "reportMileageRemaining",
+    label: "Mileage Remaining",
+  },
   // Consider adding 'Scheduled Hours', 'Current Hours', 'Hours Remaining' if needed
 ];
 
@@ -36,27 +61,27 @@ const MaintenanceReportPage = () => {
   const [loading, setLoading] = useState(false);
   // State for maintenance-specific filters - REMOVED dueWithinDays
   const [dueWithinKm, setDueWithinKm] = useState(1000); // Default: due within 1000 km
-  const [statusFilter, setStatusFilter] = useState(''); // Default: All statuses ('', 'Pending', 'Overdue')
+  const [statusFilter, setStatusFilter] = useState(""); // Default: All statuses ('', 'Pending', 'Overdue')
 
   const handleSubmit = useCatch(async ({ deviceIds, groupIds, type }) => {
     const params = new URLSearchParams();
-    deviceIds.forEach((deviceId) => params.append('deviceId', deviceId));
-    groupIds.forEach((groupId) => params.append('groupId', groupId));
+    deviceIds.forEach((deviceId) => params.append("deviceId", deviceId));
+    groupIds.forEach((groupId) => params.append("groupId", groupId));
 
     // Add maintenance-specific filters - REMOVED dueWithinDays parameter
     if (dueWithinKm !== null && dueWithinKm >= 0) {
-      params.append('dueWithinKm', dueWithinKm);
+      params.append("dueWithinKm", dueWithinKm);
     }
-    if (statusFilter && statusFilter !== '') {
-      params.append('status', statusFilter);
+    if (statusFilter && statusFilter !== "") {
+      params.append("status", statusFilter);
     }
 
     const query = params.toString();
-    const reportPath = '/api/reports/maintenance';
+    const reportPath = "/api/reports/maintenance";
 
-    if (type === 'export') {
+    if (type === "export") {
       window.location.assign(`${reportPath}/xlsx?${query}`);
-    } else if (type === 'mail') {
+    } else if (type === "mail") {
       const response = await fetch(`${reportPath}/mail?${query}`);
       if (!response.ok) {
         throw Error(await response.text());
@@ -66,7 +91,7 @@ const MaintenanceReportPage = () => {
       setLoading(true);
       try {
         const response = await fetch(`${reportPath}?${query}`, {
-          headers: { Accept: 'application/json' },
+          headers: { Accept: "application/json" },
         });
         if (response.ok) {
           setItems(await response.json());
@@ -80,7 +105,7 @@ const MaintenanceReportPage = () => {
   });
 
   const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
-    report.type = 'maintenance';
+    report.type = "maintenance";
     // Add maintenance-specific filter values to attributes - REMOVED dueWithinDays
     report.attributes = {
       ...report.attributes,
@@ -91,7 +116,7 @@ const MaintenanceReportPage = () => {
     if (error) {
       throw Error(error);
     } else {
-      navigate('/reports/scheduled');
+      navigate("/reports/scheduled");
     }
   });
 
@@ -99,23 +124,30 @@ const MaintenanceReportPage = () => {
   const formatValue = (item, key) => {
     const value = item[key];
     switch (key) {
-      case 'scheduledMileage':
-      case 'currentMileage':
-        return value !== null && value !== undefined ? Number(value).toLocaleString(undefined, { maximumFractionDigits: 1 }) : '';
-      case 'deviceName':
-      case 'groupName':
-      case 'maintenanceTask':
-      case 'status':
-      case 'mileageRemaining':
+      case "scheduledMileage":
+      case "currentMileage":
+        return value !== null && value !== undefined
+          ? Number(value).toLocaleString(undefined, {
+              maximumFractionDigits: 1,
+            })
+          : "";
+      case "deviceName":
+      case "groupName":
+      case "maintenanceTask":
+      case "status":
+      case "mileageRemaining":
         // Add cases for hours if those columns are added
-        return value || '';
+        return value || "";
       default:
         return value;
     }
   };
 
   return (
-    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportMaintenance']}>
+    <PageLayout
+      menu={<ReportsMenu />}
+      breadcrumbs={["reportTitle", "reportMaintenance"]}
+    >
       <div className={classes.header}>
         <ReportFilter
           handleSubmit={handleSubmit}
@@ -134,9 +166,11 @@ const MaintenanceReportPage = () => {
                 label="Due within (km)"
                 type="number"
                 value={dueWithinKm}
-                onChange={(e) => setDueWithinKm(parseFloat(e.target.value) || 0)}
+                onChange={(e) =>
+                  setDueWithinKm(parseFloat(e.target.value) || 0)
+                }
                 size="small"
-                InputProps={{ inputProps: { min: 0, step: 'any' } }}
+                InputProps={{ inputProps: { min: 0, step: "any" } }}
               />
             </FormControl>
           </div>
@@ -172,28 +206,28 @@ const MaintenanceReportPage = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {loading && (
-            <TableShimmer columns={fixedColumns.length} />
-          )}
+          {loading && <TableShimmer columns={fixedColumns.length} />}
           {!loading && items.length === 0 && (
             <TableRow>
               <TableCell colSpan={fixedColumns.length} align="center">
                 {/* <Typography>{t('sharedNoData')}</Typography> */}
-                <Typography>No data available for the selected criteria.</Typography>
+                <Typography>
+                  No data available for the selected criteria.
+                </Typography>
               </TableCell>
             </TableRow>
           )}
-          {!loading && items.length > 0 && (
+          {!loading &&
+            items.length > 0 &&
             items.map((item) => (
               <TableRow key={`${item.deviceId}-${item.maintenanceTask}`}>
                 {fixedColumns.map((column) => (
                   <TableCell key={column.key}>
-                    {formatValue(item, column.key) || '-'}
+                    {formatValue(item, column.key) || "-"}
                   </TableCell>
                 ))}
               </TableRow>
-            ))
-          )}
+            ))}
         </TableBody>
       </Table>
     </PageLayout>

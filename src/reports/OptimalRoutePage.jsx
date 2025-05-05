@@ -1,199 +1,344 @@
-// src/main/webapp/reports/MaintenanceReportPage.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  Table, TableHead, TableRow, TableBody, TableCell, TextField, Typography,
-  FormControl, Select, MenuItem, InputLabel,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Table,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
 } from '@mui/material';
-// Removed: formatTime import as it's no longer needed for this report
-import ReportFilter from './components/ReportFilter';
-// import { useTranslation } from '../common/components/LocalizationProvider';
+import { useCatch } from '../reactHelper';
 import PageLayout from '../common/components/PageLayout';
 import ReportsMenu from './components/ReportsMenu';
-import { useCatch } from '../reactHelper';
-import useReportStyles from './common/useReportStyles';
-import TableShimmer from '../common/components/TableShimmer';
-import scheduleReport from './common/scheduleReport';
 
-// Define the fixed columns - REMOVED scheduledDate and daysRemaining
-const fixedColumns = [
-  { key: 'deviceName', labelKey: 'deviceDialogName', label: 'Vehicle Name' },
-  { key: 'groupName', labelKey: 'groupDialogName', label: 'Group' },
-  { key: 'maintenanceTask', labelKey: 'reportMaintenanceTask', label: 'Maintenance Task' },
-  { key: 'scheduledMileage', labelKey: 'reportScheduledMileage', label: 'Scheduled Mileage' },
-  { key: 'currentMileage', labelKey: 'reportCurrentMileage', label: 'Current Mileage' },
-  { key: 'status', labelKey: 'reportStatus', label: 'Status' },
-  { key: 'mileageRemaining', labelKey: 'reportMileageRemaining', label: 'Mileage Remaining' },
-  // Consider adding 'Scheduled Hours', 'Current Hours', 'Hours Remaining' if needed
-];
+import {
+  GoogleMap,
+  LoadScript,
+  DirectionsRenderer,
+  Autocomplete,
+  Marker,
+  Polyline,
+  TrafficLayer,
+} from '@react-google-maps/api';
+import axios from 'axios';
+
+const containerStyle = {
+  width: '100%',
+  height: '500px',
+};
+
+const center = {
+  lat: 9.03,
+  lng: 38.74,
+};
 
 const OptimalRoutePage = () => {
-  const navigate = useNavigate();
-  const classes = useReportStyles();
-  // const t = useTranslation();
-
-  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  // State for maintenance-specific filters - REMOVED dueWithinDays
-  const [dueWithinKm, setDueWithinKm] = useState(1000); // Default: due within 1000 km
-  const [statusFilter, setStatusFilter] = useState(''); // Default: All statuses ('', 'Pending', 'Overdue')
+  const [startLocation, setStartLocation] = useState('');
+  const [endLocation, setEndLocation] = useState('');
+  const [routeType, setRouteType] = useState('fastest');
+  const [routeData, setRouteData] = useState([]);
+  const [directions, setDirections] = useState([]);
+  const [mapType, setMapType] = useState('roadmap');
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [showTraffic, setShowTraffic] = useState(false);
+  const [devices, setDevices] = useState([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [devicePosition, setDevicePosition] = useState({
+    lat: 9.03,
+    lng: 38.74,
+  });
+  const originAutocompleteRef = useRef(null);
+  const destinationAutocompleteRef = useRef(null);
 
-  const handleSubmit = useCatch(async ({ deviceIds, groupIds, type }) => {
-    const params = new URLSearchParams();
-    deviceIds.forEach((deviceId) => params.append('deviceId', deviceId));
-    groupIds.forEach((groupId) => params.append('groupId', groupId));
+  const backend_url = 'http://localhost:3000';
 
-    // Add maintenance-specific filters - REMOVED dueWithinDays parameter
-    if (dueWithinKm !== null && dueWithinKm >= 0) {
-      params.append('dueWithinKm', dueWithinKm);
-    }
-    if (statusFilter && statusFilter !== '') {
-      params.append('status', statusFilter);
-    }
-
-    const query = params.toString();
-    const reportPath = '/api/reports/maintenance';
-
-    if (type === 'export') {
-      window.location.assign(`${reportPath}/xlsx?${query}`);
-    } else if (type === 'mail') {
-      const response = await fetch(`${reportPath}/mail?${query}`);
-      if (!response.ok) {
-        throw Error(await response.text());
-      }
-      // Optionally show success message
-    } else {
-      setLoading(true);
+  useEffect(() => {
+    const fetchDevices = async () => {
       try {
-        const response = await fetch(`${reportPath}?${query}`, {
-          headers: { Accept: 'application/json' },
-        });
-        if (response.ok) {
-          setItems(await response.json());
-        } else {
-          throw Error(await response.text());
+        const res = await axios.get(`${backend_url}/api/devices`);
+        const deviceData = res.data; // Ensure we have the correct response structure
+        setDevices(deviceData); // Store devices in the state
+
+        if (deviceData.length > 0) {
+          setSelectedDeviceId(deviceData[0].id); // Set the first device's ID
+          setSelectedDevice(deviceData[0]); // Store the first device as the selected device
+          setDevicePosition(deviceData[0].position); // Set the device's position
         }
-      } finally {
-        setLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch devices', error);
+      }
+    };
+
+    fetchDevices();
+  }, []);
+
+  const calculateRoutes = async ({ startLocation, endLocation, routeType }) => {
+    if (!startLocation || !endLocation || !isLoaded) return;
+
+    const baseUrl = '/api/route';
+    const deviceId = selectedDeviceId;
+
+    const params = new URLSearchParams();
+    params.append('deviceId', deviceId);
+    params.append('start', startLocation);
+    params.append('end', endLocation);
+
+    setLoading(true);
+
+    const response = await fetch(`${baseUrl}?${params}`, {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      try {
+        const errorJson = JSON.parse(errorText);
+        throw new Error(errorJson.message || errorText);
+      } catch {
+        throw new Error(errorText);
       }
     }
-  });
 
-  const handleSchedule = useCatch(async (deviceIds, groupIds, report) => {
-    report.type = 'maintenance';
-    // Add maintenance-specific filter values to attributes - REMOVED dueWithinDays
-    report.attributes = {
-      ...report.attributes,
-      dueWithinKm,
-      status: statusFilter,
-    };
-    const error = await scheduleReport(deviceIds, groupIds, report);
-    if (error) {
-      throw Error(error);
-    } else {
-      navigate('/reports/scheduled');
-    }
-  });
+    const data = await response.json();
 
-  // Format values for the maintenance report table - REMOVED cases for date/days
-  const formatValue = (item, key) => {
-    const value = item[key];
-    switch (key) {
-      case 'scheduledMileage':
-      case 'currentMileage':
-        return value !== null && value !== undefined ? Number(value).toLocaleString(undefined, { maximumFractionDigits: 1 }) : '';
-      case 'deviceName':
-      case 'groupName':
-      case 'maintenanceTask':
-      case 'status':
-      case 'mileageRemaining':
-        // Add cases for hours if those columns are added
-        return value || '';
-      default:
-        return value;
+    console.log('API Route Data:', data);
+
+    const enrichedRoutes = data.map((route) => {
+      const distanceKm = route.distanceKm;
+      const durationMin = route.durationMin;
+
+      // Use the fuelConsumptionRate from the selected device
+      const estimatedFuel = selectedDevice
+        ? ((distanceKm * selectedDevice.fuelConsumptionRate) / 100).toFixed(2)
+        : 'N/A';
+
+      const polylinePath = google.maps.geometry.encoding.decodePath(
+        route.polyline
+      );
+
+      return {
+        type: route.routeType,
+        result: route,
+        distance: distanceKm.toFixed(1),
+        time: durationMin.toFixed(1),
+        fuel: estimatedFuel,
+        polylinePath,
+      };
+    });
+
+    console.log('Enriched Routes:', enrichedRoutes);
+
+    setDirections(enrichedRoutes);
+    setRouteData(enrichedRoutes);
+    setLoading(false);
+  };
+
+  const onStartLocationLoad = (autocomplete) => {
+    originAutocompleteRef.current = autocomplete;
+  };
+
+  const onDestinationLocationLoad = (autocomplete) => {
+    destinationAutocompleteRef.current = autocomplete;
+  };
+
+  const extractPlaceName = (place) => {
+    return place.name || place.formatted_address || place.vicinity || '';
+  };
+
+  const getMarkerIcon = (status) => {
+    if (status === 'online') {
+      return 'http://maps.google.com/mapfiles/ms/icons/green-dot.png';
+    } else if (status === 'offline') {
+      return 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
     }
+    return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'; // Default icon
   };
 
   return (
-    <PageLayout menu={<ReportsMenu />} breadcrumbs={['reportTitle', 'reportMaintenance']}>
-      <div className={classes.header}>
-        <ReportFilter
-          handleSubmit={handleSubmit}
-          handleSchedule={handleSchedule}
-          multiDevice
-          includeGroups
-          loading={loading}
-          ignoreDateRange
-          ignorePeriod
+    <PageLayout
+      menu={<ReportsMenu />}
+      breadcrumbs={['Plan Route', 'Optimal Route']}
+    >
+      <Box display="flex" gap={2} flexWrap="wrap" p={2}>
+        <LoadScript
+          googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+          libraries={['places', 'geometry']}
+          onLoad={() => setIsLoaded(true)}
         >
-          {/* Custom filters - REMOVED the "Due within (days)" TextField */}
-          <div className={classes.filterItem}>
-            <FormControl fullWidth size="small">
-              <TextField
-                // label={t('reportDueWithinKm')}
-                label="Due within (km)"
-                type="number"
-                value={dueWithinKm}
-                onChange={(e) => setDueWithinKm(parseFloat(e.target.value) || 0)}
-                size="small"
-                InputProps={{ inputProps: { min: 0, step: 'any' } }}
-              />
-            </FormControl>
-          </div>
-          <div className={classes.filterItem}>
-            <FormControl fullWidth size="small">
-              {/* <InputLabel>{t('reportStatus')}</InputLabel> */}
-              <InputLabel>Status</InputLabel>
-              <Select
-                label="Status"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                size="small"
+          {isLoaded && (
+            <>
+              <Autocomplete
+                onLoad={onStartLocationLoad}
+                onPlaceChanged={() => {
+                  const place = originAutocompleteRef.current.getPlace();
+                  if (place) setStartLocation(extractPlaceName(place));
+                }}
               >
-                {/* <MenuItem value="">{t('reportAll')}</MenuItem> */}
-                {/* <MenuItem value="Pending">{t('reportPending')}</MenuItem> */}
-                {/* <MenuItem value="Overdue">{t('reportOverdue')}</MenuItem> */}
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="Pending">Pending</MenuItem>
-                <MenuItem value="Overdue">Overdue</MenuItem>
-              </Select>
-            </FormControl>
-          </div>
-          {/* Consider adding filter for 'Due within (hours)' if needed */}
-        </ReportFilter>
-      </div>
+                <TextField
+                  label="Start Location"
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                />
+              </Autocomplete>
+
+              <Autocomplete
+                onLoad={onDestinationLocationLoad}
+                onPlaceChanged={() => {
+                  const place = destinationAutocompleteRef.current.getPlace();
+                  if (place) setEndLocation(extractPlaceName(place));
+                }}
+              >
+                <TextField
+                  label="Destination Location"
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                />
+              </Autocomplete>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Device</InputLabel>
+                <Select
+                  value={selectedDeviceId}
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    setSelectedDeviceId(selectedId);
+                    const foundDevice = devices.find(
+                      (d) => d.id === selectedId
+                    );
+                    setSelectedDevice(foundDevice || null);
+                    setDevicePosition(
+                      foundDevice?.position || { lat: 9.03, lng: 38.74 }
+                    ); // Update device position
+                  }}
+                  label="Device"
+                >
+                  {devices.map((device) => (
+                    <MenuItem key={device.id} value={device.id}>
+                      {device.name || `Device ${device.id}`}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Route Type</InputLabel>
+                <Select
+                  value={routeType}
+                  onChange={(e) => setRouteType(e.target.value)}
+                  label="Route Type"
+                >
+                  <MenuItem value="fastest">Fastest</MenuItem>
+                  <MenuItem value="shortest">Shortest</MenuItem>
+                  <MenuItem value="fuel">Fuel-Optimal</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Map Type</InputLabel>
+                <Select
+                  value={mapType}
+                  onChange={(e) => setMapType(e.target.value)}
+                  label="Map Type"
+                >
+                  <MenuItem value="roadmap">Standard</MenuItem>
+                  <MenuItem value="satellite">Satellite</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Button
+                variant="outlined"
+                onClick={() => setShowTraffic(!showTraffic)}
+              >
+                {showTraffic ? 'Hide Traffic' : 'Show Traffic'}
+              </Button>
+
+              <Button
+                variant="contained"
+                onClick={() =>
+                  calculateRoutes({
+                    startLocation,
+                    endLocation,
+                    routeType,
+                  })
+                }
+                disabled={
+                  loading ||
+                  !startLocation ||
+                  !endLocation ||
+                  !isLoaded ||
+                  !selectedDeviceId
+                }
+              >
+                {loading ? 'Loading...' : 'Plan Route'}
+              </Button>
+            </>
+          )}
+        </LoadScript>
+      </Box>
+
+      <Box p={2}>
+        {isLoaded && (
+          <GoogleMap
+            mapContainerStyle={containerStyle}
+            center={center}
+            zoom={13}
+            mapTypeId={mapType}
+          >
+            {directions.map((route, index) => (
+              <Polyline
+                key={index}
+                path={route.polylinePath}
+                options={{
+                  strokeColor:
+                    route.type === 'fastest'
+                      ? '#007FFF'
+                      : route.type === 'shortest'
+                      ? '#009900'
+                      : '#FF0000',
+                  strokeWeight: 5,
+                }}
+              />
+            ))}
+            {selectedDevice && (
+              <Marker
+                position={devicePosition}
+                icon={getMarkerIcon(selectedDevice.status)}
+                title={selectedDevice.name}
+              />
+            )}
+            {showTraffic && <TrafficLayer />}
+          </GoogleMap>
+        )}
+      </Box>
+
       <Table>
         <TableHead>
           <TableRow>
-            {fixedColumns.map((column) => (
-              // <TableCell key={column.key}>{t(column.labelKey)}</TableCell>
-              <TableCell key={column.key}>{column.label}</TableCell>
-            ))}
+            <TableCell>Route Type</TableCell>
+            <TableCell>Distance (km)</TableCell>
+            <TableCell>Time (min)</TableCell>
+            <TableCell>Fuel (L)</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {loading && (
-            <TableShimmer columns={fixedColumns.length} />
-          )}
-          {!loading && items.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={fixedColumns.length} align="center">
-                {/* <Typography>{t('sharedNoData')}</Typography> */}
-                <Typography>No data available for the selected criteria.</Typography>
-              </TableCell>
+          {routeData.map((route, index) => (
+            <TableRow key={index}>
+              <TableCell>{route.type}</TableCell>
+              <TableCell>{route.distance}</TableCell>
+              <TableCell>{route.time}</TableCell>
+              <TableCell>{route.fuel}</TableCell>
             </TableRow>
-          )}
-          {!loading && items.length > 0 && (
-            items.map((item) => (
-              <TableRow key={`${item.deviceId}-${item.maintenanceTask}`}>
-                {fixedColumns.map((column) => (
-                  <TableCell key={column.key}>
-                    {formatValue(item, column.key) || '-'}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          )}
+          ))}
         </TableBody>
       </Table>
     </PageLayout>
