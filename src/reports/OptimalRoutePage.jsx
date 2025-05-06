@@ -320,20 +320,33 @@ const OptimalRoutePage = () => {
           </GoogleMap>
         )}
       </Box>
+      <Typography variant="h6">Route Summary</Typography>
 
       <Table>
         <TableHead>
           <TableRow>
+            <TableCell>Vehicle</TableCell>
+            <TableCell>Start</TableCell>
+            <TableCell>Destination</TableCell>
             <TableCell>Route Type</TableCell>
             <TableCell>Distance (km)</TableCell>
-            <TableCell>Time (min)</TableCell>
-            <TableCell>Fuel (L)</TableCell>
+            <TableCell>Estimated Time (min)</TableCell>
+            <TableCell>Estimated Fuel (L)</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {routeData.map((route, index) => (
             <TableRow key={index}>
-              <TableCell>{route.type}</TableCell>
+              <TableCell>{selectedDevice?.name}</TableCell>
+              <TableCell>{startLocation}</TableCell>
+              <TableCell>{endLocation}</TableCell>
+              <TableCell>
+                {{
+                  fastest: 'Fastest',
+                  shortest: 'Shortest',
+                  fuel: 'Fuel-Optimal',
+                }[route.type] || route.type}
+              </TableCell>
               <TableCell>{route.distance}</TableCell>
               <TableCell>{route.time}</TableCell>
               <TableCell>{route.fuel}</TableCell>
