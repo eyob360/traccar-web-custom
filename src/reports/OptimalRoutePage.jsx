@@ -163,6 +163,25 @@ const OptimalRoutePage = () => {
     return 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'; // Default icon
   };
 
+  const getStrokeColor = (type) => {
+    console.log('color is ', type);
+    switch (type) {
+      case 'Fastest Route':
+        console.log('fastest color displaying ');
+        return '#007FFF'; // Blue for fastest route
+      case 'Shortest Route':
+        console.log('shortest color displaying ');
+
+        return '#009900'; // Green for shortest route
+      case 'Fuel-Optimal Route':
+        console.log('fuel color displaying ');
+
+        return '#800080'; // Purple for fuel-optimal route
+      default:
+        return '#FF0000'; // Red for alternative routes
+    }
+  };
+
   return (
     <PageLayout
       menu={<ReportsMenu />}
@@ -237,9 +256,9 @@ const OptimalRoutePage = () => {
                   onChange={(e) => setRouteType(e.target.value)}
                   label="Route Type"
                 >
-                  <MenuItem value="fastest">Fastest</MenuItem>
-                  <MenuItem value="shortest">Shortest</MenuItem>
-                  <MenuItem value="fuel">Fuel-Optimal</MenuItem>
+                  <MenuItem value="Fastest Route">Fastest</MenuItem>
+                  <MenuItem value="Shortest Route">Shortest</MenuItem>
+                  <MenuItem value="Fuel-Optimal Route">Fuel-Optimal</MenuItem>
                 </Select>
               </FormControl>
 
@@ -294,21 +313,19 @@ const OptimalRoutePage = () => {
             zoom={13}
             mapTypeId={mapType}
           >
-            {directions.map((route, index) => (
-              <Polyline
-                key={index}
-                path={route.polylinePath}
-                options={{
-                  strokeColor:
-                    route.type === 'fastest'
-                      ? '#007FFF'
-                      : route.type === 'shortest'
-                      ? '#009900'
-                      : '#FF0000',
-                  strokeWeight: 5,
-                }}
-              />
-            ))}
+            {directions
+              .filter((route) => route.type === routeType) // Filter based on selected routeType
+              .map((route, index) => (
+                <Polyline
+                  key={index}
+                  path={route.polylinePath}
+                  options={{
+                    strokeColor: getStrokeColor(routeType),
+                    strokeWeight: 5, // Set thickness of the route line
+                    strokeOpacity: 1,
+                  }}
+                />
+              ))}
             {selectedDevice && (
               <Marker
                 position={devicePosition}
